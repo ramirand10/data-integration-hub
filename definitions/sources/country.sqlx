@@ -1,0 +1,7 @@
+config {
+  type: "declaration",
+  database: "data-integration-hub-437714",
+  schema: "country_raw",
+  name: "countries_data",
+  description: ""
+}
