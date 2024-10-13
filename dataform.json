@@ -1,0 +1,6 @@
+{
+    "warehouse": "bigquery",
+    "defaultSchema": "country_raw",
+    "defaultDatabase": "data-integration-hub-437714",
+    "defaultLocation": "US"
+}
