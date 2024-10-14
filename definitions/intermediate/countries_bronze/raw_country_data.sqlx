@@ -1,0 +1,55 @@
+config {
+    type: "incremental",
+    schema: "countries_bronze",
+    description: "Dados brutos extraídos da countries_data, transformando informações gerais dos países em colunas específicas.",
+    tags: ['owner:bronze_layer'],
+    columns: {
+        extract_data:  "Data e hora da extração dos dados.",
+        id: "Identificador único do país.",
+        name: "Nome oficial do país.",
+        capital: "Nome da capital do país.",
+        population: "População total do país no momento da extração.",
+        languages: "Lista de idiomas oficiais do país, transformando dados em colunas a partir de um array.",
+        region: "Região geográfica em que o país está localizado (ex. Europa, Ásia).",
+        json_data: "Dados brutos em formato JSON extraídos da API, armazenados sem transformação."
+    },
+    bigquery: {
+        partitionBy: "TIMESTAMP_TRUNC(extract_data, day)",
+        clusterBy: ["region", "population"],
+        labels: {
+            domain: "countries",
+            source: "country_raw",
+            schedule: "diario"
+        },
+    }
+}
+
+pre_operations {
+  ${when(
+      incremental(),
+      `DECLARE event_timestamp DEFAULT (
+        SELECT DATE_SUB(MAX(extract_data), INTERVAL 7 DAY)
+        FROM ${ref("country_raw", "countries_data")})`,
+    )
+  }
+}
+
+SELECT
+    extract_data,
+    id,
+    name,
+    capital,
+    population,
+    ARRAY(
+        SELECT language
+        FROM UNNEST(languages) AS language
+        WHERE language IS NOT NULL AND language != ''
+    ) AS languages,
+    region,
+    json_data
+FROM ${ref("country_raw", "countries_data")}
+${
+  when(incremental(),
+    `WHERE extract_data > event_timestamp`
+  )
+}
