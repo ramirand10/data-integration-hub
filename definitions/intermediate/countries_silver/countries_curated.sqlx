@@ -1,0 +1,36 @@
+config {
+    type: "view",
+    schema: "countries_silver",
+    description: "View com dados transformados dos países.",
+    tags: ['owner:bronze_layer', 'silver: silver_layer'],
+    columns: {
+        extract_data:  "Data e hora da extração dos dados.",
+        id: "Identificador único do país, usado para referência cruzada com outras tabelas.",
+        name: "Nome oficial do país em caixa alta, com espaços em branco removidos.",
+        capital: "Nome da capital do país em caixa alta, com espaços em branco removidos.",
+        population: "População total do país no momento da extração.",
+        languages: "Lista de idiomas oficiais falados no país. Mantido como array de linguagens.",
+        region: "Região geográfica em que o país está localizado (ex. Europa, Ásia), padronizada para caixa alta.",
+        area: "Área total do país em quilômetros quadrados, extraída do campo 'area' no JSON.",
+        currency: "Moeda oficial do país, extraída do campo 'currency' no JSON."
+    },
+    bigquery: {
+        labels: {
+            domain: "countries_silver",
+            source: "countries_bronze",
+            schedule: "diario"
+        }
+    }
+}
+
+SELECT
+    extract_data,
+    id,
+    TRIM(UPPER(name)) AS name,
+    TRIM(UPPER(capital)) AS capital,
+    population,
+    languages,
+    TRIM(UPPER(region)) AS region,
+    JSON_VALUE(json_data, '$.area') AS area,
+    JSON_VALUE(json_data, '$.currency') AS currency
+FROM ${ref("countries_bronze", "raw_country_data")}
